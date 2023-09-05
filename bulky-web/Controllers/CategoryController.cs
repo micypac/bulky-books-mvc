@@ -1,6 +1,7 @@
 ﻿using bulky_web.Data;
 using Microsoft.AspNetCore.Mvc;
 using bulky_web.Models;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace bulky_web.Controllers;
 
@@ -22,5 +23,18 @@ public class CategoryController : Controller
   public IActionResult Create()
   {
     return View();
+  }
+
+  [HttpPost]
+  public IActionResult Create(Category obj)
+  {
+    if (ModelState.IsValid)
+    {
+      _db.Categories.Add(obj);
+      _db.SaveChanges();
+      return RedirectToAction("Index");
+    }
+
+    return View(obj);
   }
 }
