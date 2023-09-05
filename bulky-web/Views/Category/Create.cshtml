@@ -6,6 +6,9 @@
       <h2 class="text-primary">Create Category</h2>
       <hr>
     </div>
+
+    @* <div asp-validation-summary="All"></div> *@
+
     <div class="mb-3 row p-1">
       <label asp-for="Name" class="p-0">Category Name</label>
       <input asp-for="Name" class="form-control">
@@ -25,6 +28,13 @@
       </div>
     </div>
   </div>
-  
-  
 </form>
+
+@* This is for client side validation. 
+Basically we're including the script contents of _ValidationScriptsPartia.cshtml on this view. *@
+
+@section Scripts{
+  @{
+  <partial name="_ValidationScriptsPartial"/>
+  }
+}
