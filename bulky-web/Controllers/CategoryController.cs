@@ -37,6 +37,7 @@ public class CategoryController : Controller
     {
       _db.Categories.Add(obj);
       _db.SaveChanges();
+      TempData["success"] = "Category created successfully";
       return RedirectToAction("Index");
     }
 
@@ -46,18 +47,14 @@ public class CategoryController : Controller
   public IActionResult Edit(int? id)
   {
     if (id == null || id == 0)
-    {
       return NotFound();
-    }
 
     Category? retrievedCategory = _db.Categories.Find(id); // only works on primary keys
     // Category? retrievedCategory1 = _db.Categories.FirstOrDefault(u => u.Id == id); // will return null if not found
     // Category? retrievedCategory2 = _db.Categories.Where(u => u.Id == id).FirstOrDefault(); // if need more filter criteria
 
     if (retrievedCategory == null)
-    {
       return NotFound();
-    }
 
     return View(retrievedCategory);
   }
@@ -69,6 +66,7 @@ public class CategoryController : Controller
     {
       _db.Categories.Update(obj);
       _db.SaveChanges();
+      TempData["success"] = "Category updated successfully";
       return RedirectToAction("Index");
     }
 
@@ -98,6 +96,7 @@ public class CategoryController : Controller
 
     _db.Categories.Remove(obj);
     _db.SaveChanges();
+    TempData["success"] = "Category deleted successfully";
     return RedirectToAction("Index");
 
   }
