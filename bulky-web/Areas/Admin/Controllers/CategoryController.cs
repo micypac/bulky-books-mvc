@@ -4,8 +4,9 @@ using bulkyBook.Models;
 using System.Data.Common;
 using bulky.DataAccess.Repository.IRepository;
 
-namespace bulky_web.Controllers;
+namespace bulky_web.Areas.Admin.Controllers;
 
+[Area("Admin")]
 public class CategoryController : Controller
 {
   private readonly IUnitOfWork _unitOfWork;
