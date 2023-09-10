@@ -11,11 +11,13 @@ public class ProductController : Controller
 {
   // fields
   private readonly IUnitOfWork _unitOfWork;
+  private readonly IWebHostEnvironment _webHostEnvironment; // for image uploads
 
   // constructor
-  public ProductController(IUnitOfWork unitOfWork)
+  public ProductController(IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment)
   {
     _unitOfWork = unitOfWork;
+    _webHostEnvironment = webHostEnvironment;
   }
 
 
@@ -23,12 +25,13 @@ public class ProductController : Controller
 
   public IActionResult Index()
   {
-    List<Product> objProductList = _unitOfWork.Product.GetAll().ToList();
+    List<Product> objProductList = _unitOfWork.Product.GetAll(includeProperties: "Category").ToList();
 
     return View(objProductList);
   }
 
-  public IActionResult Create()
+  // combined CREATE and UPDATE
+  public IActionResult Upsert(int? id)
   {
 
     // _unitOfWork.Category is returning IEnumerable of Category so we convert it into IEnumerable of SelectListItem
@@ -75,15 +78,53 @@ public class ProductController : Controller
       CategoryList = CategoryList
     };
 
-    return View(productVM);
+    if (id == null || id == 0)
+    {
+      // create 
+      return View(productVM);
+    }
+    else
+    { // update
+      productVM.Product = _unitOfWork.Product.Get(obj => obj.Id == id);
+      return View(productVM);
+    }
+
   }
 
   [HttpPost]
-  public IActionResult Create(ProductVM obj)
+  public IActionResult Upsert(ProductVM obj, IFormFile? attachedFile)
   {
     if (ModelState.IsValid)
     {
-      _unitOfWork.Product.Add(obj.Product);
+      // create and store the product image file
+      string wwwRootPath = _webHostEnvironment.WebRootPath;
+      if (attachedFile != null)
+      {
+        string fileName = Guid.NewGuid().ToString() + Path.GetExtension(attachedFile.FileName);
+        string productPath = Path.Combine(wwwRootPath, @"images/product");
+
+        // on *Update*, delete old image
+        if (!string.IsNullOrEmpty(obj.Product.ImageUrl))
+        {
+          var oldImagePath = Path.Combine(wwwRootPath, obj.Product.ImageUrl.TrimStart('/'));
+
+          if (System.IO.File.Exists(oldImagePath))
+            System.IO.File.Delete(oldImagePath);
+        }
+
+        using (var fileStream = new FileStream(Path.Combine(productPath, fileName), FileMode.Create))
+        {
+          attachedFile.CopyTo(fileStream);
+        }
+
+        obj.Product.ImageUrl = @"/images/product/" + fileName;
+      }
+
+      if (obj.Product.Id == 0)
+        _unitOfWork.Product.Add(obj.Product);
+      else
+        _unitOfWork.Product.Update(obj.Product);
+
       _unitOfWork.Save();
       TempData["success"] = "Product created successfully";
       return RedirectToAction("Index");
@@ -99,32 +140,32 @@ public class ProductController : Controller
     return View(obj);
   }
 
-  public IActionResult Edit(int? id)
-  {
-    if (id == null || id == 0)
-      return NotFound();
+  // public IActionResult Edit(int? id)
+  // {
+  //   if (id == null || id == 0)
+  //     return NotFound();
 
-    Product? retrievedProduct = _unitOfWork.Product.Get(u => u.Id == id);
+  //   Product? retrievedProduct = _unitOfWork.Product.Get(u => u.Id == id);
 
-    if (retrievedProduct == null)
-      return NotFound();
+  //   if (retrievedProduct == null)
+  //     return NotFound();
 
-    return View(retrievedProduct);
-  }
+  //   return View(retrievedProduct);
+  // }
 
-  [HttpPost]
-  public IActionResult Edit(Product obj)
-  {
-    if (ModelState.IsValid)
-    {
-      _unitOfWork.Product.Update(obj);
-      _unitOfWork.Save();
-      TempData["success"] = "Product updated successfully";
-      return RedirectToAction("Index");
-    }
+  // [HttpPost]
+  // public IActionResult Edit(Product obj)
+  // {
+  //   if (ModelState.IsValid)
+  //   {
+  //     _unitOfWork.Product.Update(obj);
+  //     _unitOfWork.Save();
+  //     TempData["success"] = "Product updated successfully";
+  //     return RedirectToAction("Index");
+  //   }
 
-    return View(obj);
-  }
+  //   return View(obj);
+  // }
 
   public IActionResult Delete(int? id)
   {
