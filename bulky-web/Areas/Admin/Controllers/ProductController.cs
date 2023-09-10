@@ -188,10 +188,27 @@ public class ProductController : Controller
     if (obj == null)
       return NotFound();
 
+    // delete image file before deleting product object
+    var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, obj.ImageUrl.TrimStart('/'));
+
+    if (System.IO.File.Exists(oldImagePath))
+      System.IO.File.Delete(oldImagePath);
+
     _unitOfWork.Product.Remove(obj);
     _unitOfWork.Save();
     TempData["success"] = "Product deleted successfully";
     return RedirectToAction("Index");
 
   }
+
+  #region API CALLS
+
+  [HttpGet]
+  public IActionResult GetAll()
+  {
+    List<Product> objProductList = _unitOfWork.Product.GetAll(includeProperties: "Category").ToList();
+
+    return Json(new { data = objProductList });
+  }
+  #endregion
 }
