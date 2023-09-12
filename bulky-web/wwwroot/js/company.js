@@ -8,11 +8,11 @@ function loadDataTable() {
   dataTable = $("#tblData").DataTable({
     ajax: { url: "/admin/company/getall" },
     columns: [
-      { data: "name", width: "25%" },
-      { data: "streetAddress", width: "10%" },
-      { data: "city", width: "15%" },
-      { data: "state", width: "10%" },
-      { data: "phoneNumber", width: "10%" },
+      { data: "name", width: "15%" },
+      { data: "streetAddress", width: "25%" },
+      { data: "city", width: "10%" },
+      { data: "state", width: "5%" },
+      { data: "phoneNumber", width: "15%" },
       {
         data: "id",
         render: function (data) {
@@ -36,9 +36,13 @@ function loadDataTable() {
 }
 
 function DeleteItem(id) {
-  fetch(`/admin/company/delete/${id}`, {
-    // method: "DELETE",
-  })
-    .then(() => dataTable.ajax.reload())
-    .catch((error) => console.error("Unable to delete company.", error));
+  const isDelete = confirm("Are you sure you want to delete?");
+  if (isDelete) {
+    fetch(`/admin/company/delete/${id}`)
+      .then(() => {
+        dataTable.ajax.reload();
+        toastr.success("Company deleted successfully");
+      })
+      .catch((error) => console.error("Unable to delete company.", error));
+  }
 }

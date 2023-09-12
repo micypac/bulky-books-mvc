@@ -70,6 +70,12 @@
                         </select>
                         @* <label asp-for="Input.Role">Role:</label> *@
                     </div>
+                    <div class="form-floating mb-3">
+                        <select asp-for="Input.CompanyId" asp-items="@Model.Input.CompanyList" class="form-select" >
+                            <option disabled selected>--Select Company--</option>
+                        </select>
+                        @* <label asp-for="Input.Role">Role:</label> *@
+                    </div>
 
                     <div>
                         <button id="registerSubmit" type="submit" class="w-100 btn btn-sm btn-dark">Register</button>
