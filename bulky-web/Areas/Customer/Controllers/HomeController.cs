@@ -25,8 +25,16 @@ public class HomeController : Controller
 
     public IActionResult Details(int prodId)
     {
-        Product prod = _unitOfWork.Product.Get(item => item.Id == prodId, includeProperties: "Category");
-        return View(prod);
+        ShoppingCart cart = new()
+        {
+
+            Product = _unitOfWork.Product.Get(item => item.Id == prodId, includeProperties: "Category"),
+            Count = 1,
+            ProductId = prodId
+
+        };
+
+        return View(cart);
     }
 
     public IActionResult Privacy()
