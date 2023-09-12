@@ -13,7 +13,9 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 
   public DbSet<Category> Categories { get; set; }
   public DbSet<Product> Products { get; set; }
+  public DbSet<Company> Companies { get; set; }
   public DbSet<ApplicationUser> ApplicationUsers { get; set; }
+
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -68,6 +70,39 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
         Price100 = 35.00,
         CategoryId = 3,
         ImageUrl = ""
+      }
+    );
+
+    modelBuilder.Entity<Company>().HasData(
+      new Company
+      {
+        Id = 1,
+        Name = "Tech Solutions",
+        PhoneNumber = "6748779655",
+        StreetAddress = "123 Tech St",
+        City = "Tech City",
+        State = "IL",
+        PostalCode = "12121"
+      },
+      new Company
+      {
+        Id = 2,
+        Name = "Vivid Books",
+        PhoneNumber = "7045564122",
+        StreetAddress = "99 Vid St.",
+        City = "Vid City",
+        State = "CA",
+        PostalCode = "92501"
+      },
+      new Company
+      {
+        Id = 3,
+        Name = "Readers Club",
+        PhoneNumber = "9410095656",
+        StreetAddress = "466 Drew Blvd",
+        City = "Hoboken",
+        State = "NJ",
+        PostalCode = "09678"
       }
     );
   }
