@@ -5,6 +5,7 @@ using bulkyBook.Models;
 using bulkyBook.Models.ViewModels;
 using bulky.DataAccess.Repository.IRepository;
 using System.Security.Claims;
+using Stripe.Checkout;
 
 namespace bulky_web.Areas.Customer.Controllers;
 
@@ -123,12 +124,46 @@ public class CartController : Controller
     if (applicationUser.CompanyId.GetValueOrDefault() == 0)
     {
       // Stripe logic
+      var domain = "https://localhost:5278/";
+      var options = new SessionCreateOptions
+      {
+        SuccessUrl = domain + $"customer/cart/OrderConfirmation?id={ShoppingCartVM.OrderHeader.Id}",
+        CancelUrl = domain + "customer/cart/index",
+        LineItems = new List<SessionLineItemOptions>(),
+        Mode = "payment",
+      };
+
+      foreach (var items in ShoppingCartVM.ShoppingCartList)
+      {
+        var sessionLineItem = new SessionLineItemOptions
+        {
+          PriceData = new SessionLineItemPriceDataOptions
+          {
+            UnitAmount = (long)(items.Price * 100),
+            Currency = "usd",
+            ProductData = new SessionLineItemPriceDataProductDataOptions
+            {
+              Name = items.Product.Title
+            }
+          },
+          Quantity = items.Count
+        };
+
+        options.LineItems.Add(sessionLineItem);
+      }
+
+      var service = new SessionService();
+      Session session = service.Create(options);
+
+      _unitOfWork.OrderHeader.UpdateStripePaymentId(ShoppingCartVM.OrderHeader.Id, session.Id, session.PaymentIntentId);
+      _unitOfWork.Save();
+
+      Response.Headers.Add("Location", session.Url);
+      return new StatusCodeResult(303);
     }
 
     return RedirectToAction(nameof(OrderConfirmation), new
-    {
-      id = ShoppingCartVM.OrderHeader.Id
-    });
+    { id = ShoppingCartVM.OrderHeader.Id });
   }
 
   public IActionResult OrderConfirmation(int id)
