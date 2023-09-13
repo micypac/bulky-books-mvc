@@ -20,14 +20,25 @@ public class Repository<T> : IRepository<T> where T : class
     _db.Products.Include(prod => prod.Category).Include(prod => prod.CategoryId);
   }
 
+  // methods implementation
   public void Add(T entity)
   {
     dbSet.Add(entity);
   }
 
-  public T Get(Expression<Func<T, bool>> filter, string? includeProperties = null)
+  public T Get(
+    Expression<Func<T, bool>> filter,
+    string? includeProperties = null,
+    bool tracked = false
+  )
   {
-    IQueryable<T> query = dbSet;
+    IQueryable<T> query;
+
+    if (tracked)
+      query = dbSet;
+    else
+      query = dbSet.AsNoTracking();
+
     query = query.Where(filter);
 
     if (!string.IsNullOrEmpty(includeProperties))
