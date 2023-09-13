@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using bulky.Utility;
+using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
 
 /* 
     can login even with no confirmed email
@@ -48,6 +51,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:SecretKey").Get<string>();
 
 app.UseRouting();
 app.UseAuthentication(); // check if login credentials are valid
