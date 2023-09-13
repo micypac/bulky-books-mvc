@@ -48,7 +48,19 @@ public class HomeController : Controller
 
         cartObj.ApplicationUserId = userId;
 
-        _unitOfWork.ShoppingCart.Add(cartObj);
+        ShoppingCart cartFromDb = _unitOfWork.ShoppingCart
+            .Get(item => item.ApplicationUserId == userId && item.ProductId == cartObj.ProductId);
+
+        if (cartFromDb != null)
+        {
+            cartFromDb.Count += cartObj.Count;
+            _unitOfWork.ShoppingCart.Update(cartFromDb);
+        }
+        else
+        {
+            _unitOfWork.ShoppingCart.Add(cartObj);
+        }
+
         _unitOfWork.Save();
 
         return RedirectToAction(nameof(Index));
