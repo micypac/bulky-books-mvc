@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using bulkyBook.Models;
 using bulky.DataAccess.Repository.IRepository;
 
@@ -35,6 +37,21 @@ public class HomeController : Controller
         };
 
         return View(cart);
+    }
+
+    [HttpPost]
+    [Authorize]
+    public IActionResult Details(ShoppingCart cartObj)
+    {
+        var claimsIdentity = (ClaimsIdentity)User.Identity;
+        var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+        cartObj.ApplicationUserId = userId;
+
+        _unitOfWork.ShoppingCart.Add(cartObj);
+        _unitOfWork.Save();
+
+        return RedirectToAction(nameof(Index));
     }
 
     public IActionResult Privacy()
