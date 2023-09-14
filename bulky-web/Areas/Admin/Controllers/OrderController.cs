@@ -24,6 +24,17 @@ public class OrderController : Controller
     return View();
   }
 
+  public IActionResult Details(int orderId)
+  {
+    OrderVM orderVM = new()
+    {
+      OrderHeader = _uow.OrderHeader.Get(item => item.Id == orderId, includeProperties: "ApplicationUser"),
+      OrderDetails = _uow.OrderDetail.GetAll(item => item.OrderHeaderId == orderId, includeProperties: "Product")
+    };
+
+    return View(orderVM);
+  }
+
 
 
   #region API CALLS
