@@ -6,6 +6,7 @@ using bulkyBook.Models.ViewModels;
 using bulky.DataAccess.Repository.IRepository;
 using bulky.Utility;
 using System.Diagnostics;
+using System.Security.Claims;
 
 namespace bulky_web.Areas.Admin.Controllers;
 
@@ -72,7 +73,19 @@ public class OrderController : Controller
   [HttpGet]
   public IActionResult GetAll(string status)
   {
-    IEnumerable<OrderHeader> listOfOrderHeaders = _uow.OrderHeader.GetAll(includeProperties: "ApplicationUser").ToList();
+    IEnumerable<OrderHeader> listOfOrderHeaders;
+
+    if (User.IsInRole(SD.Role_Admin) || User.IsInRole(SD.Role_Employee))
+    {
+      listOfOrderHeaders = _uow.OrderHeader.GetAll(includeProperties: "ApplicationUser").ToList();
+    }
+    else
+    {
+      var claimsIdentity = (ClaimsIdentity)User.Identity;
+      var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+      listOfOrderHeaders = _uow.OrderHeader.GetAll(obj => obj.ApplicationUserId == userId, includeProperties: "ApplicationUser").ToList();
+    }
 
     switch (status)
     {
