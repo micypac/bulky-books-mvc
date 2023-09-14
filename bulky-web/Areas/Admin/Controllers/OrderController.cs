@@ -8,6 +8,7 @@ using bulky.Utility;
 
 namespace bulky_web.Areas.Admin.Controllers;
 
+[Area("Admin")]
 public class OrderController : Controller
 {
   private readonly IUnitOfWork _uow;
