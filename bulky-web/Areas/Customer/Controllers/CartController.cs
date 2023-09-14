@@ -83,7 +83,7 @@ public class CartController : Controller
     ShoppingCartVM.ShoppingCartList = _unitOfWork.ShoppingCart.GetAll(item => item.ApplicationUserId == userId,
       includeProperties: "Product");
 
-    ShoppingCartVM.OrderHeader.OrderDate = System.DateTime.Now;
+    ShoppingCartVM.OrderHeader.OrderDate = DateTime.UtcNow;
     ShoppingCartVM.OrderHeader.ApplicationUserId = userId;
     ApplicationUser applicationUser = _unitOfWork.ApplicationUser.Get(obj => obj.Id == userId);
 
@@ -124,7 +124,7 @@ public class CartController : Controller
     if (applicationUser.CompanyId.GetValueOrDefault() == 0)
     {
       // Stripe logic
-      var domain = "https://localhost:5278/";
+      var domain = "http://localhost:5278/";
       var options = new SessionCreateOptions
       {
         SuccessUrl = domain + $"customer/cart/OrderConfirmation?id={ShoppingCartVM.OrderHeader.Id}",
@@ -162,12 +162,33 @@ public class CartController : Controller
       return new StatusCodeResult(303);
     }
 
-    return RedirectToAction(nameof(OrderConfirmation), new
-    { id = ShoppingCartVM.OrderHeader.Id });
+    return RedirectToAction(nameof(OrderConfirmation), new { id = ShoppingCartVM.OrderHeader.Id });
   }
 
   public IActionResult OrderConfirmation(int id)
   {
+    OrderHeader orderHeader = _unitOfWork.OrderHeader.Get(obj => obj.Id == id, includeProperties: "ApplicationUser");
+
+    if (orderHeader.PaymentStatus != SD.PaymentStatusDelayedPayment)
+    {
+      var service = new SessionService();
+      Session session = service.Get(orderHeader.SessionId);
+
+      if (session.PaymentStatus.ToLower() == "paid")
+      {
+        _unitOfWork.OrderHeader.UpdateStripePaymentId(id, session.Id, session.PaymentIntentId);
+        _unitOfWork.OrderHeader.UpdateStatus(id, SD.StatusApproved, SD.PaymentStatusApproved);
+
+        _unitOfWork.Save();
+      }
+    }
+
+    List<ShoppingCart> shoppingCarts = _unitOfWork.ShoppingCart
+      .GetAll(obj => obj.ApplicationUserId == orderHeader.ApplicationUserId).ToList();
+
+    _unitOfWork.ShoppingCart.RemoveRange(shoppingCarts);
+    _unitOfWork.Save();
+
     return View(id);
   }
 
