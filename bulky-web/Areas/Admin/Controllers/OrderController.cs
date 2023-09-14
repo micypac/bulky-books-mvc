@@ -5,6 +5,7 @@ using bulkyBook.Models;
 using bulkyBook.Models.ViewModels;
 using bulky.DataAccess.Repository.IRepository;
 using bulky.Utility;
+using Stripe;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -99,9 +100,36 @@ public class OrderController : Controller
     return RedirectToAction(nameof(Details), new { orderId = OrderVM.OrderHeader.Id });
   }
 
+  [HttpPost]
+  [Authorize(Roles = $"{SD.Role_Admin},{SD.Role_Employee}")]
+  public IActionResult CancelOrder()
+  {
+    var orderHeader = _uow.OrderHeader.Get(obj => obj.Id == OrderVM.OrderHeader.Id);
 
+    if (orderHeader.PaymentStatus == SD.PaymentStatusApproved)
+    {
+      var options = new RefundCreateOptions
+      {
+        Reason = RefundReasons.RequestedByCustomer,
+        PaymentIntent = orderHeader.PaymentIntentId
+      };
 
+      var service = new RefundService();
+      Refund refund = service.Create(options);
 
+      _uow.OrderHeader.UpdateStatus(orderHeader.Id, SD.StatusCancelled, SD.StatusRefunded);
+    }
+    else
+    {
+      _uow.OrderHeader.UpdateStatus(orderHeader.Id, SD.StatusCancelled, SD.StatusCancelled);
+    }
+
+    _uow.Save();
+
+    TempData["success"] = "Order Cancelled Successfully.";
+
+    return RedirectToAction(nameof(Details), new { orderId = OrderVM.OrderHeader.Id });
+  }
 
 
   #region API CALLS
