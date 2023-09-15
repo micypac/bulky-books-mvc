@@ -95,7 +95,7 @@ public class CartController : Controller
 
     if (applicationUser.CompanyId.GetValueOrDefault() == 0)
     {
-      ShoppingCartVM.OrderHeader.PaymentStatus = SD.PaymentStatusDelayedPayment;
+      ShoppingCartVM.OrderHeader.PaymentStatus = SD.PaymentStatusPending;
       ShoppingCartVM.OrderHeader.OrderStatus = SD.StatusPending;
     }
     else

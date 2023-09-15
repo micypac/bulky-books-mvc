@@ -6,6 +6,7 @@ using bulkyBook.Models.ViewModels;
 using bulky.DataAccess.Repository.IRepository;
 using bulky.Utility;
 using Stripe;
+using Stripe.Checkout;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -129,6 +130,76 @@ public class OrderController : Controller
     TempData["success"] = "Order Cancelled Successfully.";
 
     return RedirectToAction(nameof(Details), new { orderId = OrderVM.OrderHeader.Id });
+  }
+
+
+  [ActionName("Details")]
+  [HttpPost]
+  public IActionResult Details_PAY_NOW()
+  {
+    OrderVM.OrderHeader = _uow.OrderHeader.Get(obj => obj.Id == OrderVM.OrderHeader.Id, includeProperties: "ApplicationUser");
+    OrderVM.OrderDetails = _uow.OrderDetail.GetAll(obj => obj.OrderHeaderId == OrderVM.OrderHeader.Id, includeProperties: "Product");
+
+    // Stripe logic
+    var domain = "http://localhost:5278/";
+    var options = new SessionCreateOptions
+    {
+      SuccessUrl = domain + $"admin/order/PaymentConfirmation?orderHeaderId={OrderVM.OrderHeader.Id}",
+      CancelUrl = domain + $"admin/order/details?orderId={OrderVM.OrderHeader.Id}",
+      LineItems = new List<SessionLineItemOptions>(),
+      Mode = "payment",
+    };
+
+    foreach (var item in OrderVM.OrderDetails)
+    {
+      var sessionLineItem = new SessionLineItemOptions
+      {
+        PriceData = new SessionLineItemPriceDataOptions
+        {
+          UnitAmount = (long)(item.Price * 100),
+          Currency = "usd",
+          ProductData = new SessionLineItemPriceDataProductDataOptions
+          {
+            Name = item.Product.Title
+          }
+        },
+        Quantity = item.Count
+      };
+
+      options.LineItems.Add(sessionLineItem);
+    }
+
+    var service = new SessionService();
+    Session session = service.Create(options);
+
+    _uow.OrderHeader.UpdateStripePaymentId(OrderVM.OrderHeader.Id, session.Id, session.PaymentIntentId);
+    _uow.Save();
+
+    Response.Headers.Add("Location", session.Url);
+
+    return new StatusCodeResult(303);
+
+  }
+
+
+  public IActionResult PaymentConfirmation(int orderHeaderId)
+  {
+    OrderHeader orderHeader = _uow.OrderHeader.Get(obj => obj.Id == orderHeaderId);
+
+    if (orderHeader.PaymentStatus == SD.PaymentStatusDelayedPayment)
+    {
+      var service = new SessionService();
+      Session session = service.Get(orderHeader.SessionId);
+
+      if (session.PaymentStatus.ToLower() == "paid")
+      {
+        _uow.OrderHeader.UpdateStripePaymentId(orderHeaderId, session.Id, session.PaymentIntentId);
+        _uow.OrderHeader.UpdateStatus(orderHeaderId, orderHeader.OrderStatus, SD.PaymentStatusApproved);
+        _uow.Save();
+      }
+    }
+
+    return View(orderHeaderId);
   }
 
 

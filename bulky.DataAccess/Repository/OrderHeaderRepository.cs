@@ -41,7 +41,7 @@ public class OrderHeaderRepository : Repository<OrderHeader>, IOrderHeaderReposi
     if (!string.IsNullOrEmpty(paymentIntentId))
     {
       orderFromDb.PaymentIntentId = paymentIntentId;
-      orderFromDb.PaymentDate = DateTime.Now;
+      orderFromDb.PaymentDate = DateTime.UtcNow;
     }
   }
 }
